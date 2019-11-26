@@ -1884,6 +1884,11 @@ eventemitter3@^3.0.0:
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-3.1.2.tgz#2d3d48f9c346698fce83a85d7d664e98535df6e7"
   integrity sha512-tvtQIeLVHjDkJYnzf2dgVMxfuSGJeM/7UCG17TT4EumTfNtF+0nebF/4zWOIkCreAbtNqhGEboB6BWrwqNaw4Q==
 
+events@1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/events/-/events-1.1.0.tgz#4b389fc200f910742ebff3abb2efe33690f45429"
+  integrity sha1-SzifwgD5EHQuv/Orsu/jNpD0VCk=
+
 exec-sh@^0.2.0:
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/exec-sh/-/exec-sh-0.2.2.tgz#2a5e7ffcbd7d0ba2755bdecb16e5a427dfbdec36"
@@ -4082,7 +4087,7 @@ promise@^7.1.1:
   dependencies:
     asap "~2.0.3"
 
-prop-types@^15.5.8, prop-types@^15.6.0, prop-types@^15.6.1, prop-types@^15.6.2:
+prop-types@^15.5.10, prop-types@^15.5.8, prop-types@^15.6.0, prop-types@^15.6.1, prop-types@^15.6.2:
   version "15.7.2"
   resolved "https://registry.yarnpkg.com/prop-types/-/prop-types-15.7.2.tgz#52c41e75b8c87e72b9d9360e0206b99dcbffa6c5"
   integrity sha512-8QQikdH7//R2vurIJSutZ1smHYTcLpRWEOlHnzcWHmBYrOGUysKwSsrC89BCiFj3CbrfJ/nXFdJepOVrY1GCHQ==
@@ -4175,6 +4180,20 @@ react-native-branch@~3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/react-native-branch/-/react-native-branch-3.0.1.tgz#5b07b61cbd290168cd3c3662e017ebe0f356d2ca"
   integrity sha512-vbcYxPZlpF5f39GAEUF8kuGQqCNeD3E6zEdvtOq8oCGZunHXlWlKgAS6dgBKCvsHvXgHuMtpvs39VgOp8DaKig==
+
+react-native-button@^2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/react-native-button/-/react-native-button-2.4.0.tgz#42b487073a7ce7c54ab503f77c6ced1ab95742bf"
+  integrity sha512-4siaJlpOLeL9fAhX8VU3cnUfcGLe3E2zABDWSKxkF+NiYOd+AnKeYY29WXlV8hXhCFo+Ry7E+alrJ6zjZLTSfg==
+  dependencies:
+    prop-types "^15.5.10"
+
+react-native-pjsip@^2.7.4:
+  version "2.7.4"
+  resolved "https://registry.yarnpkg.com/react-native-pjsip/-/react-native-pjsip-2.7.4.tgz#f60664a274285458f127935ada8c0d6fc2f24e18"
+  integrity sha512-d5/Wh2l/ID+guqk1LwZ5m2Jf94/XYRrEKvESTBY55qDQ0lRoZ2G3+TDZzGHBAD//sFsTemzUgaSi9FjUETmA1g==
+  dependencies:
+    events "1.1.0"
 
 react-native-view-shot@2.6.0:
   version "2.6.0"

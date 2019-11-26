@@ -1,19 +1,22 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import PjsipHelper from 'PjsipHelper';
+import Button from 'react-native-button';
+import PjsipHelper from './js/pjsip-helper';
+
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <button onClick={this.handleClick}>Bouton</button>
+      <Button
+          onPress={ PjsipHelper.register }>
+          S‘enregistrer
+      </Button>
     </View>
-
-
-    
   );
 }
+
+
 
 const styles = StyleSheet.create({
   container: {

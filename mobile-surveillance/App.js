@@ -2,21 +2,18 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import Button from 'react-native-button';
-import PjsipHelper from './js/pjsip-helper';
-
+import { pjsipHelper } from './js/pjsip-helper';
 
 export default function App() {
   return (
     <View style={styles.container}>
       <Button
-          onPress={ PjsipHelper.register }>
+          onPress={() => pjsipHelper.start() }>
           S‘enregistrer
       </Button>
     </View>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -26,3 +23,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+

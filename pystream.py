@@ -1,42 +1,65 @@
-import numpy as np
 import cv2
-
-
+import io
+from picamera import PiCamera
+from picamera.array import PiRGBArray
+from datetime import datetime
 import time
-import os
 
+COOLDOWN_DURATION = 10
 
-def start_stream():
-    os.system("raspivid -o - -t 0 -hf -rot 180 -w 640 -h 480 -fps 24 |cvlc -vvv stream:///dev/stdin --sout '#standard{access=http,mux=ts,dst=:8554}' :demux=h264")
+def timestamp_minute():
+        """
+        This method returns the cur timestamp as minute, in a entire value.
+        """
+        return int(datetime.timestamp(datetime.now()))
+
+# Tant que 1:
+    # Si mouvement:
+        # Si non recording:
+            # Commencer recording
+        # Si recording
+            #  D  caller fin recording de X minutes.
 
 def shape_detection():
-    # multiple cascades: https://github.com/Itseez/opencv/tree/master/data/haarcascades
-    #https://github.com/Itseez/opencv/blob/master/data/haarcascades/haarcascade_frontalface_default.xml
-    fullbody_cascade = cv2.CascadeClassifier('./haarcascades/haarcascade_upperbody.xml')
+    # initialize the camera and grab a reference to the raw camera capture
+    camera = PiCamera()
+    camera.resolution = (640, 480)
+    camera.framerate = 32
+    rawCapture = PiRGBArray(camera, size=(640, 480))
+
     eye_cascade = cv2.CascadeClassifier('./haarcascades/haarcascade_eye.xml')
-    cap = cv2.VideoCapture(0)
-    while 1:
-        ret, img = cap.read()
+
+    isRecording = False
+    endRecording = 0
+    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+
+        img = frame.array
+
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        fullbody = fullbody_cascade.detectMultiScale(gray, 1.3, 5)
         eye = eye_cascade.detectMultiScale(gray, 1.3, 5)
-        for (x,y,w,h) in fullbody:
-            print("Quelque chose qui s'apparente à une silhouette humaine est apparu.")
+
         for (x,y,w,h) in eye:
-            print("Quelque chose qui s'apparente des yeux.")
-            # cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
-            # roi_gray = gray[y:y+h, x:x+w]
-            # roi_color = img[y:y+h, x:x+w]
-        # cv2.imshow('img',img)
-        k = cv2.waitKey(30) & 0xff
-        if k == 27:
-            break
-    cap.release()
-    cv2.destroyAllWindows()
+            if (isRecording == False):
+                print("Yeux detected, on enregistre")
+                camera.start_recording('./recording/VIDEO_' + str(timestamp_minute()) + '.h264')
+                isRecording = True
+                endRecording = timestamp_minute() + COOLDOWN_DURATION
+            else:
+                print("Yeux detected on d  cale la fin du recording")
+                endRecording = timestamp_minute() + COOLDOWN_DURATION
 
+        if (isRecording == True and timestamp_minute() > endRecording):
+            print("Pas vu Dieu depuis 10 seconde, stop recording")
+            camera.stop_recording()
+            isRecording = False
 
-start_stream()
+#                      cv2.imshow('img',img)
+            k = cv2.waitKey(30) & 0xff
+            if k == 27:
+                break
+
+        rawCapture.truncate(0)
+
+        cv2.destroyAllWindows()
+
 shape_detection()
-
-
-

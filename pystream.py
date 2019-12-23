@@ -24,6 +24,7 @@ def shape_detection():
     # initialize the camera and grab a reference to the raw camera capture
     camera = PiCamera()
     camera.resolution = (640, 480)
+    camera.rotation = 180
     camera.framerate = 32
     rawCapture = PiRGBArray(camera, size=(640, 480))
 

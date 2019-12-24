@@ -7,6 +7,10 @@ import time
 
 COOLDOWN_DURATION = 10
 
+
+def start_stream():
+    os.system("raspivid -o - -t 0 -hf -rot 180 -w 640 -h 480 -fps 24 |cvlc -vvv stream:///dev/stdin --sout '#standard{access=http,mux=ts,dst=:8554}' :demux=h264")
+
 def timestamp_minute():
         """
         This method returns the cur timestamp as minute, in a entire value.
@@ -32,7 +36,9 @@ def shape_detection():
 
     isRecording = False
     endRecording = 0
-    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+    camcap = camera.capture_continuous(rawCapture, format="bgr", use_video_port=True)
+    os.system(camcap + " | cvlc -vvv stream:///dev/stdin --sout '#standard{access=http,mux=ts,dst=:8554}' :demux=h264")
+    for frame in camcap:
 
         img = frame.array
 

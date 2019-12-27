@@ -32,29 +32,27 @@ def shape_detection():
     camera.resolution = (640, 480)
     camera.rotation = 180
     camera.framerate = 32
-    rawCapture = PiRGBArray(camera, size=(640, 480))
 
     eye_cascade = cv2.CascadeClassifier('./haarcascades/haarcascade_eye.xml')
 
     isRecording = False
     endRecording = 0
 
-# NEW
     s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    print 'Socket created'
 
     s.bind((HOST,PORT))
-    print 'Socket bind complete'
     s.listen(10)
-    print 'Socket now listening'
 
     conn,addr=s.accept()
-# FINNEW
 
-    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+    while True:
+        ret, frame = cam.read()
+        result, frame = cv2.imencode('.jpg', frame, encode_param)
 
-        data = pickle.dumps(frame)
-        clientsocket.sendall(struct.pack("H", len(data))+data)
+        data = pickle.dumps(frame, 0)
+        size = len(data)
+        client_socket.sendall(struct.pack(">L", size) + data)
 
         img = frame.array
 
@@ -76,14 +74,9 @@ def shape_detection():
             camera.stop_recording()
             isRecording = False
 
-#                      cv2.imshow('img',img)
-            k = cv2.waitKey(30) & 0xff
-            if k == 27:
-                break
+        #                      cv2.imshow('img',img)
+        k = cv2.waitKey(30) & 0xff
+        if k == 27:
+        break
 
-        rawCapture.truncate(0)
-
-        cv2.destroyAllWindows()
-
-start_stream()
 shape_detection()

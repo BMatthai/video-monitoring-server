@@ -32,6 +32,7 @@ def shape_detection():
     camera.resolution = (640, 480)
     camera.rotation = 180
     camera.framerate = 32
+    rawCapture = PiRGBArray(camera, size=(640, 480))
 
     eye_cascade = cv2.CascadeClassifier('./haarcascades/haarcascade_eye.xml')
 
@@ -46,8 +47,12 @@ def shape_detection():
     conn,addr=s.accept()
 
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-    while True:
-        ret, frame = cam.read()
+   
+    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+
+        # image = frame.array
+
+        # ret, frame = camera.read()
         result, frame = cv2.imencode('.jpg', frame, encode_param)
 
         data = pickle.dumps(frame, 0)

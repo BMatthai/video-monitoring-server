@@ -50,8 +50,9 @@ def shape_detection():
 
 	color = (0, 0, 0) 
 	thickness = -1
-	for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-		
+	# for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+	while(1):
+		_, frame = cap.read()
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		eye = eye_cascade.detectMultiScale(gray, 1.3, 5)
 		for (x,y,w,h) in eye:

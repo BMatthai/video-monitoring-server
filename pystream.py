@@ -50,6 +50,7 @@ def shape_detection():
 
 	color = (0, 0, 0) 
 	thickness = -1
+	img_counter = 0
 	for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
 	
 		image = frame.array
@@ -68,9 +69,8 @@ def shape_detection():
 
 		data = pickle.dumps(image, 0)
 		size = len(data)
-		# print("{}: {}".format(img_counter, size))
+		print("{}: {}".format(img_counter, size))
 		conn.sendall(struct.pack(">L", size) + data)
-		rawCapture.truncate(0)
-		# img_counter += 1
+		img_counter += 1
 
 shape_detection()

@@ -70,6 +70,7 @@ def shape_detection():
 		size = len(data)
 		# print("{}: {}".format(img_counter, size))
 		conn.sendall(struct.pack(">L", size) + data)
+		rawCapture.truncate(0)
 		# img_counter += 1
 
 shape_detection()

@@ -69,7 +69,7 @@ def shape_detection():
 		data = pickle.dumps(image, 0)
 		size = len(data)
 		# print("{}: {}".format(img_counter, size))
-		s.sendall(struct.pack(">L", size) + data)
+		conn.sendall(struct.pack(">L", size) + data)
 		# img_counter += 1
 
 shape_detection()

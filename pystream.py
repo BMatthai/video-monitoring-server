@@ -5,67 +5,73 @@ from picamera.array import PiRGBArray
 from datetime import datetime
 import time
 
-COOLDOWN_DURATION = 10
+import pickle
+import socket
+import struct
 
-def start_stream():
-    os.system("raspivid -o - -t 0 -hf -rot 180 -w 640 -h 480 -fps 24 |cvlc -vvv stream:///dev/stdin --sout '#standard{access=http,mux=ts,dst=:8554}' :demux=h264")
+COOLDOWN_DURATION = 10
+HOST=''
+PORT=8554
 
 def timestamp_minute():
-        """
-        This method returns the cur timestamp as minute, in a entire value.
-        """
-        return int(datetime.timestamp(datetime.now()))
+		"""
+		This method returns the cur timestamp as minute, in a entire value.
+		"""
+		return int(datetime.timestamp(datetime.now()))
 
 # Tant que 1:
-    # Si mouvement:
-        # Si non recording:
-            # Commencer recording
-        # Si recording
-            #  D  caller fin recording de X minutes.
+	# Si mouvement:
+		# Si non recording:
+			# Commencer recording
+		# Si recording
+			#  D  caller fin recording de X minutes.
 
 def shape_detection():
-    # initialize the camera and grab a reference to the raw camera capture
-    camera = PiCamera()
-    camera.resolution = (640, 480)
-    camera.rotation = 180
-    camera.framerate = 32
-    rawCapture = PiRGBArray(camera, size=(640, 480))
+	# initialize the camera and grab a reference to the raw camera capture
+	camera = PiCamera()
+	camera.resolution = (640, 480)
+	camera.rotation = 180
+	camera.framerate = 32
+	rawCapture = PiRGBArray(camera, size=(640, 480))
 
-    eye_cascade = cv2.CascadeClassifier('./haarcascades/haarcascade_eye.xml')
+	eye_cascade = cv2.CascadeClassifier('./haarcascades/haarcascade_eye.xml')
 
-    isRecording = False
-    endRecording = 0
+	isRecording = False
+	endRecording = 0
 
-    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+	s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
-        img = frame.array
+	s.bind((HOST,PORT))
+	s.listen(10)
 
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        eye = eye_cascade.detectMultiScale(gray, 1.3, 5)
+	conn,addr=s.accept()
 
-        for (x,y,w,h) in eye:
-            if (isRecording == False):
-                print("Yeux detected, on enregistre")
-                camera.start_recording('./recording/VIDEO_' + str(timestamp_minute()) + '.h264')
-                isRecording = True
-                endRecording = timestamp_minute() + COOLDOWN_DURATION
-            else:
-                print("Yeux detected on d  cale la fin du recording")
-                endRecording = timestamp_minute() + COOLDOWN_DURATION
+	encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
 
-        if (isRecording == True and timestamp_minute() > endRecording):
-            print("Pas vu Dieu depuis 10 seconde, stop recording")
-            camera.stop_recording()
-            isRecording = False
+	color = (0, 0, 0)
+	thickness = -1
+	img_counter = 0
+	for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+		image = frame.array
+		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+		eye = eye_cascade.detectMultiScale(gray, 1.3, 5)
+		for (x,y,w,h) in eye:
+			image = cv2.rectangle(image, (x, y), (x + w, y + h), color, thickness)
+			if (isRecording == False):
+				camera.start_recording('./recording/VIDEO_' + str(timestamp_minute()) + '.h264')
+				isRecording = True
+				endRecording = timestamp_minute() + COOLDOWN_DURATION
+			else:
+				endRecording = timestamp_minute() + COOLDOWN_DURATION
 
-#                      cv2.imshow('img',img)
-            k = cv2.waitKey(30) & 0xff
-            if k == 27:
-                break
+		result, image = cv2.imencode('.jpg', image, encode_param)
 
-        rawCapture.truncate(0)
+		data = pickle.dumps(image, 0)
+		size = len(data)
+		print("{}: {}".format(img_counter, size))
+		conn.sendall(struct.pack(">L", size)+data)
+		img_counter += 1
+		rawCapture.seek(0)
+		rawCapture.truncate(0)
 
-        cv2.destroyAllWindows()
-
-start_stream()
 shape_detection()

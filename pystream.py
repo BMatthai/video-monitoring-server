@@ -48,16 +48,15 @@ def shape_detection():
 
 	encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
 
-	color = (0, 0, 0) 
+	color = (0, 0, 0)
 	thickness = -1
 	img_counter = 0
 	for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-	
 		image = frame.array
 		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 		eye = eye_cascade.detectMultiScale(gray, 1.3, 5)
 		for (x,y,w,h) in eye:
-			image = cv2.rectangle(image, (x, y), (x + w, y + h), color, thickness) 
+			image = cv2.rectangle(image, (x, y), (x + w, y + h), color, thickness)
 			if (isRecording == False):
 				camera.start_recording('./recording/VIDEO_' + str(timestamp_minute()) + '.h264')
 				isRecording = True
@@ -70,7 +69,9 @@ def shape_detection():
 		data = pickle.dumps(image, 0)
 		size = len(data)
 		print("{}: {}".format(img_counter, size))
-		conn.sendall(struct.pack(">L", size) + data)
+		conn.sendall(struct.pack(">L", size)+data)
 		img_counter += 1
+		rawCapture.seek(0)
+		rawCapture.truncate(0)
 
 shape_detection()

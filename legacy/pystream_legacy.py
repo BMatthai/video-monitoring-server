@@ -15,6 +15,7 @@ PORT=8554
 
 app = Flask(__name__)
 
+
 def timestamp_minute():
 		"""
 		This method returns the cur timestamp as minute, in a entire value.

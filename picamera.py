@@ -6,6 +6,7 @@ import io
 import threading
 import picamera
 
+import cv2
 
 class Camera(object):
     thread = None  # background thread that reads frames from camera
@@ -40,11 +41,21 @@ class Camera(object):
             time.sleep(2)
 
             stream = io.BytesIO()
-            for foo in camera.capture_continuous(stream, 'jpeg',
-                                                 use_video_port=True):
+            eye_cascade = cv2.CascadeClassifier('./haarcascades/haarcascade_eye.xml')
+            color = (0, 0, 0)
+            thickness = -1
+            
+            for foo in camera.capture_continuous(stream, 'jpeg', use_video_port=True):
                 # store frame
                 stream.seek(0)
-                cls.frame = stream.read()
+                # cls.frame = stream.read()
+                image = stream.read()
+                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                eye = eye_cascade.detectMultiScale(gray, 1.3, 5)
+                for (x,y,w,h) in eye:
+                    image = cv2.rectangle(image, (x, y), (x + w, y + h), color, thickness)
+
+                cls.frame = image
 
                 # reset stream for next frame
                 stream.seek(0)

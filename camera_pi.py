@@ -49,7 +49,8 @@ class Camera(object):
 				# store frame
 				stream.seek(0)
 				# cls.frame = stream.read()
-				image = stream.read()
+				frame = stream.read()
+				image = frame.array
 				gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 				eye = eye_cascade.detectMultiScale(gray, 1.3, 5)
 				for (x,y,w,h) in eye:

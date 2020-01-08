@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from flask import Flask, render_template, Response
-from picamera import Camera
+from camera_pi import Camera
 
 app = Flask(__name__)
 

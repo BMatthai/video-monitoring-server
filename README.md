@@ -6,6 +6,8 @@ This repository contains a Python Flask application designed to be ran on a Rasp
 
 Client side, I created a small mobile cross-platform application with React-Native framework. It is available [here](https://github.com/BMatthai/video-monitoring-client-mobile).
 
+I am still working on this project, my plan is to integrate some shape recognition and motion detection with OpenCV library adn a Push Notification service. 
+
 ## Usage
 
 Ensure you've properly installed all dependencies.

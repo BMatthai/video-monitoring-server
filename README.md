@@ -11,6 +11,7 @@ Client side, I created a small mobile cross-platform application with React-Nati
 Ensure you've properly installed all dependencies.
 
 Then run the following command (replace path/port/host if needed):
+
 *FLASK_APP=/home/pi/video-monitoring-server/pystream.py flask run --port 8554 --host=0.0.0.0*
 
 

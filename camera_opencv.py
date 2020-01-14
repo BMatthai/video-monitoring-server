@@ -52,19 +52,23 @@ class Camera(BaseCamera):
 			cnts = imutils.grab_contours(cnts)
 
 			for c in cnts:
-				if cv2.contourArea(c) < 2:
-					continue
+				longueur_contour = cv2.contourArea(c)
+				print(longueur_contour)
+				if (longueur_contour > 30):
+					print("Motion detected")
 				(x, y, w, h) = cv2.boundingRect(c)
 				cv2.rectangle(thresh, (x, y), (x + w, y + h), (255, 255, 128), 2)
-
-			# fullbody = fullbody_cascade.detectMultiScale(img, 1.3, 5)
-			# cars = cars_cascade.detectMultiScale(img, 1.3, 5)
-			# for (x,y,w,h) in fullbody:
-			# 	img = cv2.rectangle(img, (x, y), (x + w, y + h), color, thickness)
-
-			# for (x,y,w,h) in cars:
-			# 	img = cv2.rectangle(img, (x, y), (x + w, y + h), color, thickness)
 
 			# encode as a jpeg image and return it
 			yield cv2.imencode('.jpg', frameDelta)[1].tobytes()
 			last_img = img
+
+
+# fullbody = fullbody_cascade.detectMultiScale(img, 1.3, 5)
+# cars = cars_cascade.detectMultiScale(img, 1.3, 5)
+# for (x,y,w,h) in fullbody:
+# 	img = cv2.rectangle(img, (x, y), (x + w, y + h), color, thickness)
+
+# for (x,y,w,h) in cars:
+# 	img = cv2.rectangle(img, (x, y), (x + w, y + h), color, thickness)
+

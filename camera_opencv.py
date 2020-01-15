@@ -9,6 +9,11 @@ import time
 import numpy as np
 import argparse
 
+from picamera import PiCamera
+from picamera.array import PiRGBArray
+ 
+import io
+
 def timestamp_second():
 		"""
 		This method returns the cur timestamp as minute, in a entire value.
@@ -36,11 +41,14 @@ def detect_cadav(chose_cascade, img, color):
 		print("voiture detected")
 		img = cv2.rectangle(img, (x, y), (x + w, y + h), color, 1)
 	return img
+
 def transform_image(img):
-	img = imutils.resize(img, width=640)
-	img = cv2.flip(img, -1)
+	# img = cv2.flip(img, -1)
 	# img = cv2.blur(img,(5,5))
+
 	img = adjust_gamma(img, gamma=2.5)
+	#img = imutils.resize(img, width=640)
+
 	return img
 
 class Camera(BaseCamera):
@@ -58,10 +66,14 @@ class Camera(BaseCamera):
 
 	@staticmethod
 	def frames():
-		camera = cv2.VideoCapture(Camera.video_source)
 
-		if not camera.isOpened():
-			raise RuntimeError('Could not start camera.')
+		camera = PiCamera()
+		camera.resolution = (640, 480)
+		camera.rotation = 180
+		camera.framerate = 30
+
+		img = io.BytesIO()
+
 
 		green_color = (0, 255, 0)
 		red_color = (255, 0, 0)
@@ -71,12 +83,15 @@ class Camera(BaseCamera):
 		fullbody_cascade = cv2.CascadeClassifier('/home/pi/video-monitoring-server/haarcascades/haarcascade_fullbody.xml')
 		cars_cascade = cv2.CascadeClassifier('/home/pi/video-monitoring-server/haarcascades/haarcascade_cars.xml')
 
-		_, img = camera.read()
+		rawCapture=PiRGBArray(camera)
+		camera.capture(rawCapture, 'bgr')
+		img=rawCapture.array
+
 		img = transform_image(img)
 		gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 		last_img = img
-		last_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+		last_gray = gray
 
 		last_shape_time = timestamp_second()
 		last_move_time = last_shape_time
@@ -84,11 +99,14 @@ class Camera(BaseCamera):
 
 		recording = False
 
-		frame_width = int(camera.get(3))
-		frame_height = int(camera.get(4))
+		# frame_width = int(camera.get(3))
+		# frame_height = int(camera.get(4))
 
 		while True:
-			_, img = camera.read()
+			img = PiRGBArray(camera)
+			camera.capture(img, 'bgr')
+			img=rawCapture.array
+			# cv2.imwrite('img.jpg',img)
 
 			img = transform_image(img)
 
@@ -119,7 +137,7 @@ class Camera(BaseCamera):
 							print("Motion detected start recording : " + str(longueur_contour))
 							recording = True
 							curDateTime = datetime.now()
-							out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + str(longueur_contour) + '|' + str(curDateTime.strftime("%d-%m-%Y_%H:%M:%S")) + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
+							out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + str(longueur_contour) + '|' + str(curDateTime.strftime("%d-%m-%Y_%H:%M:%S")) + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (640,480))
 						
 						if (available_cooldown(last_shape_time, 3) == True):
 							last_shape_time = timestamp_second()

@@ -8,6 +8,8 @@ Client side, I created a small mobile cross-platform application with React-Nati
 
 I am still working on this project, my plan is to integrate some shape recognition and motion detection with OpenCV library and also a Push Notification service. 
 
+For this project I used some code found on [Miguel Grinberg's Github](https://github.com/miguelgrinberg/flask-video-streaming) and adapted it to match my wish.
+
 ## Usage
 
 Ensure you've properly installed all dependencies.

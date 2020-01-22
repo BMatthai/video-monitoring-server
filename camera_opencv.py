@@ -115,18 +115,21 @@ class Camera(BaseCamera):
 
 				for c in cnts:
 					longueur_contour = cv2.contourArea(c)
+					
 					if (longueur_contour > (2 * last_longueur_contour)):
 						start_recording_time = timestamp_second()
 						if (recording == False):
-							print("Motion detected start recording : " + str(longueur_contour))
 							recording = True
 							curDateTime = datetime.now()
 							out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + str(curDateTime.strftime("%d-%m-%Y_%H:%M:%S")) + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
+						
 						if (available_cooldown(last_shape_time, 3) == True):
 							last_shape_time = timestamp_second()
 							img = shape_detection(img, cars_cascade, green_color)
 							img = shape_detection(img, fullbody_cascade, red_color)
+					
 					last_longueur_contour = longueur_contour
+
 				last_gray = gray
 
 			img = improve_visibility(img)

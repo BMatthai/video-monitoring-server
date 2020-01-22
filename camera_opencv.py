@@ -36,12 +36,22 @@ def detect_cadav(chose_cascade, img, color):
 		print("voiture detected")
 		img = cv2.rectangle(img, (x, y), (x + w, y + h), color, 1)
 	return img
+
 def transform_image(img):
-	img = imutils.resize(img, width=640)
+	img = imutils.resize(img, width=500)
+	img = adjust_gamma(img, gamma=2.5)
+	gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+	gray = cv2.GaussianBlur(gray, (21, 21), 0)
+
+	return gray
+
+def improve_visibility(img):
+	# img = imutils.resize(img, width=640)
 	img = cv2.flip(img, -1)
 	# img = cv2.blur(img,(5,5))
 	img = adjust_gamma(img, gamma=2.5)
 	return img
+
 
 class Camera(BaseCamera):
 	video_source = 0
@@ -72,16 +82,13 @@ class Camera(BaseCamera):
 		cars_cascade = cv2.CascadeClassifier('/home/pi/video-monitoring-server/haarcascades/haarcascade_cars.xml')
 
 		_, img = camera.read()
-		img = transform_image(img)
-		gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-		last_img = img
-		last_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+		last_gray = transform_image(img)
 
 		last_shape_time = timestamp_second()
 		last_move_time = last_shape_time
 		start_recording_time = last_shape_time
 
+		last_longueur_contour = 100000
 		recording = False
 
 		frame_width = int(camera.get(3))
@@ -89,8 +96,6 @@ class Camera(BaseCamera):
 
 		while True:
 			_, img = camera.read()
-
-			img = transform_image(img)
 
 			if(recording == True):
 				if(available_cooldown(start_recording_time, 10) == False):
@@ -103,7 +108,8 @@ class Camera(BaseCamera):
 			if (available_cooldown(last_move_time, 0) == True):
 				last_move_time = timestamp_second()
 
-				gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+				gray = transform_image(img)
+
 				frameDelta = cv2.absdiff(last_gray, gray)
 				thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
 				thresh = cv2.dilate(thresh, None, iterations=2)
@@ -113,18 +119,21 @@ class Camera(BaseCamera):
 
 				for c in cnts:
 					longueur_contour = cv2.contourArea(c)
-					if (longueur_contour > 300):
+					print("Contour : " + str(longueur_contour))
+					if (longueur_contour > (2 * last_longueur_contour)):
 						start_recording_time = timestamp_second()
 						if (recording == False):
 							print("Motion detected start recording : " + str(longueur_contour))
 							recording = True
 							curDateTime = datetime.now()
-							out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + str(longueur_contour) + '|' + str(curDateTime.strftime("%d-%m-%Y_%H:%M:%S")) + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
-						
+							# out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + str(longueur_contour) + '|' + str(curDateTime.strftime("%d-%m-%Y_%H:%M:%S")) + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
+							out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + str(curDateTime.strftime("%d-%m-%Y_%H:%M:%S")) + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
 						if (available_cooldown(last_shape_time, 3) == True):
 							last_shape_time = timestamp_second()
 							img = detect_cadav(cars_cascade, img, green_color)
 							img = detect_cadav(fullbody_cascade, img, red_color)
+					last_longueur_contour = longueur_contour
 				last_gray = gray
 
+			img = improve_visibility(img)
 			yield cv2.imencode('.jpg', img)[1].tobytes()

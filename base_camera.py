@@ -1,139 +1,104 @@
-import os
-import cv2
-from base_camera import BaseCamera
-import imutils
-
-from datetime import datetime
 import time
-
-import numpy as np
-import argparse
-
-def timestamp_second():
-		"""
-		This method returns the cur timestamp as minute, in a entire value.
-		"""
-		return int(datetime.timestamp(datetime.now()))
-
-def available_cooldown(time, cooldown):
-	if (timestamp_second() - time > cooldown):
-		return True
-	return False
-
-def adjust_gamma(image, gamma=1.0):
-	# build a lookup table mapping the pixel values [0, 255] to
-	# their adjusted gamma values
-	invGamma = 1.0 / gamma
-	table = np.array([((i / 255.0) ** invGamma) * 255
-		for i in np.arange(0, 256)]).astype("uint8")
- 
-	# apply gamma correction using the lookup table
-	return cv2.LUT(image, table)
-
-def detect_cadav(chose_cascade, img, color):
-	chose = chose_cascade.detectMultiScale(img, 1.3, 5)
-	for (x,y,w,h) in chose:
-		print("voiture detected")
-		img = cv2.rectangle(img, (x, y), (x + w, y + h), color, 1)
-	return img
-
-def transform_image(img):
-	img = imutils.resize(img, width=500)
-	img = adjust_gamma(img, gamma=2.5)
-	gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-	gray = cv2.GaussianBlur(gray, (21, 21), 0)
-
-	return gray
-
-def improve_visibility(img):
-	# img = imutils.resize(img, width=640)
-	img = cv2.flip(img, -1)
-	# img = cv2.blur(img,(5,5))
-	img = adjust_gamma(img, gamma=2.5)
-	return img
+import threading
+try:
+	from greenlet import getcurrent as get_ident
+except ImportError:
+	try:
+		from thread import get_ident
+	except ImportError:
+		from _thread import get_ident
 
 
-class Camera(BaseCamera):
-	video_source = 0
+class CameraEvent(object):
+	"""An Event-like class that signals all active clients when a new frame is
+	available.
+	"""
+	def __init__(self):
+		self.events = {}
+
+	def wait(self):
+		"""Invoked from each client's thread to wait for the next frame."""
+		ident = get_ident()
+		if ident not in self.events:
+			# this is a new client
+			# add an entry for it in the self.events dict
+			# each entry has two elements, a threading.Event() and a timestamp
+			self.events[ident] = [threading.Event(), time.time()]
+		return self.events[ident][0].wait()
+
+	def set(self):
+		"""Invoked by the camera thread when a new frame is available."""
+		now = time.time()
+		remove = None
+		for ident, event in self.events.items():
+			if not event[0].isSet():
+				# if this client's event is not set, then set it
+				# also update the last set timestamp to now
+				event[0].set()
+				event[1] = now
+			else:
+				# if the client's event is already set, it means the client
+				# did not process a previous frame
+				# if the event stays set for more than 5 seconds, then assume
+				# the client is gone and remove it
+				if now - event[1] > 5:
+					remove = ident
+		if remove:
+			del self.events[remove]
+
+	def clear(self):
+		"""Invoked from each client's thread after a frame was processed."""
+		self.events[get_ident()][0].clear()
+
+
+class BaseCamera(object):
+	thread = None  # background thread that reads frames from camera
+	frame = None  # current frame is stored here by background thread
+	last_access = 0  # time of last client access to the camera
+	event = CameraEvent()
 
 	def __init__(self):
-		if os.environ.get('OPENCV_CAMERA_SOURCE'):
-			Camera.set_video_source(int(os.environ['OPENCV_CAMERA_SOURCE']))
-		super(Camera, self).__init__()
+		"""Start the background camera thread if it isn't running yet."""
+		if BaseCamera.thread is None:
+			BaseCamera.last_access = time.time()
 
-	
-	@staticmethod
-	def set_video_source(source):
-		Camera.video_source = source
+			# start background frame thread
+			BaseCamera.thread = threading.Thread(target=self._thread)
+			BaseCamera.thread.start()
+
+			# wait until frames are available
+			while self.get_frame() is None:
+				time.sleep(0)
+
+	def get_frame(self):
+		"""Return the current camera frame."""
+		BaseCamera.last_access = time.time()
+
+		# wait for a signal from the camera thread
+		BaseCamera.event.wait()
+		BaseCamera.event.clear()
+
+		return BaseCamera.frame
 
 	@staticmethod
 	def frames():
-		camera = cv2.VideoCapture(Camera.video_source)
+		""""Generator that returns frames from the camera."""
+		raise RuntimeError('Must be implemented by subclasses.')
 
-		if not camera.isOpened():
-			raise RuntimeError('Could not start camera.')
+	@classmethod
+	def _thread(cls):
+		"""Camera background thread."""
+		print('Starting camera thread.')
+		frames_iterator = cls.frames()
+		for frame in frames_iterator:
+			BaseCamera.frame = frame
+			BaseCamera.event.set()  # send signal to clients
+			time.sleep(0)
 
-		green_color = (0, 255, 0)
-		red_color = (255, 0, 0)
-
-		thickness = 2
-
-		fullbody_cascade = cv2.CascadeClassifier('/home/pi/video-monitoring-server/haarcascades/haarcascade_fullbody.xml')
-		cars_cascade = cv2.CascadeClassifier('/home/pi/video-monitoring-server/haarcascades/haarcascade_cars.xml')
-
-		_, img = camera.read()
-		last_gray = transform_image(img)
-
-		last_shape_time = timestamp_second()
-		last_move_time = last_shape_time
-		start_recording_time = last_shape_time
-
-		last_longueur_contour = 100000
-		recording = False
-
-		frame_width = int(camera.get(3))
-		frame_height = int(camera.get(4))
-
-		while True:
-			_, img = camera.read()
-
-			if(recording == True):
-				if(available_cooldown(start_recording_time, 10) == False):
-					out.write(img)
-				else:
-					print("Stop recording")
-					recording = False
-					out.release()
-
-			if (available_cooldown(last_move_time, 0) == True):
-				last_move_time = timestamp_second()
-
-				gray = transform_image(img)
-
-				frameDelta = cv2.absdiff(last_gray, gray)
-				thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
-				thresh = cv2.dilate(thresh, None, iterations=2)
-
-				cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-				cnts = imutils.grab_contours(cnts)
-
-				for c in cnts:
-					longueur_contour = cv2.contourArea(c)
-					print("Contour : " + str(longueur_contour))
-					if (longueur_contour > (2 * last_longueur_contour)):
-						start_recording_time = timestamp_second()
-						if (recording == False):
-							print("Motion detected start recording : " + str(longueur_contour))
-							recording = True
-							curDateTime = datetime.now()
-							# out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + str(longueur_contour) + '|' + str(curDateTime.strftime("%d-%m-%Y_%H:%M:%S")) + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
-							out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + str(curDateTime.strftime("%d-%m-%Y_%H:%M:%S")) + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
-						if (available_cooldown(last_shape_time, 3) == True):
-							last_shape_time = timestamp_second()
-							img = detect_cadav(cars_cascade, img, green_color)
-							img = detect_cadav(fullbody_cascade, img, red_color)
-					last_longueur_contour = longueur_contour
-				last_gray = gray
-
-			img = improve_visibility(img)
-			yield cv2.imencode('.jpg', img)[1].tobytes()
+			# if there hasn't been any clients asking for frames in
+			# the last 10 seconds then stop the thread
+			# if time.time() - BaseCamera.last_access > 10:
+			# 	frames_iterator.close()
+			# 	print('Stopping camera thread due to inactivity.')
+			# 	break
+		BaseCamera.thread = None

@@ -20,26 +20,22 @@ def available_cooldown(time, cooldown):
 		return True
 	return False
 
-def adjust_gamma(image, gamma=1.0):
-	# build a lookup table mapping the pixel values [0, 255] to
-	# their adjusted gamma values
-	invGamma = 1.0 / gamma
-	table = np.array([((i / 255.0) ** invGamma) * 255
-		for i in np.arange(0, 256)]).astype("uint8")
- 
-	# apply gamma correction using the lookup table
+invGamma = 1.0 / 2.5
+table = np.array([((i / 255.0) ** invGamma) * 255
+	for i in np.arange(0, 256)]).astype("uint8")
+
+def adjust_gamma(image):
 	return cv2.LUT(image, table)
 
-def detect_cadav(chose_cascade, img, color):
-	chose = chose_cascade.detectMultiScale(img, 1.3, 5)
-	for (x,y,w,h) in chose:
-		print("voiture detected")
-		img = cv2.rectangle(img, (x, y), (x + w, y + h), color, 1)
-	return img
+def shape_detection(frame, cascade, color):
+	shape = cascade.detectMultiScale(frame, 1.3, 5)
+	for (x,y,w,h) in shape:
+		frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
+	return frame
 
 def transform_image(img):
 	img = imutils.resize(img, width=500)
-	img = adjust_gamma(img, gamma=2.5)
+	img = adjust_gamma(img)
 	gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 	gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
@@ -119,20 +115,21 @@ class Camera(BaseCamera):
 
 				for c in cnts:
 					longueur_contour = cv2.contourArea(c)
-					print("Contour : " + str(longueur_contour))
+					
 					if (longueur_contour > (2 * last_longueur_contour)):
 						start_recording_time = timestamp_second()
 						if (recording == False):
-							print("Motion detected start recording : " + str(longueur_contour))
 							recording = True
 							curDateTime = datetime.now()
-							# out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + str(longueur_contour) + '|' + str(curDateTime.strftime("%d-%m-%Y_%H:%M:%S")) + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
 							out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + str(curDateTime.strftime("%d-%m-%Y_%H:%M:%S")) + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
+						
 						if (available_cooldown(last_shape_time, 3) == True):
 							last_shape_time = timestamp_second()
-							img = detect_cadav(cars_cascade, img, green_color)
-							img = detect_cadav(fullbody_cascade, img, red_color)
+							img = shape_detection(img, cars_cascade, green_color)
+							img = shape_detection(img, fullbody_cascade, red_color)
+					
 					last_longueur_contour = longueur_contour
+
 				last_gray = gray
 
 			img = improve_visibility(img)

@@ -3,6 +3,55 @@ import cv2
 from base_camera import BaseCamera
 import imutils
 
+from datetime import datetime
+import time
+
+import numpy as np
+import argparse
+
+def timestamp_second():
+		"""
+		This method returns the cur timestamp as minute, in a entire value.
+		"""
+		return int(datetime.timestamp(datetime.now()))
+
+def available_cooldown(time, cooldown):
+	if (timestamp_second() - time > cooldown):
+		return True
+	return False
+
+def adjust_gamma(image, gamma=1.0):
+	# build a lookup table mapping the pixel values [0, 255] to
+	# their adjusted gamma values
+	invGamma = 1.0 / gamma
+	table = np.array([((i / 255.0) ** invGamma) * 255
+		for i in np.arange(0, 256)]).astype("uint8")
+ 
+	# apply gamma correction using the lookup table
+	return cv2.LUT(image, table)
+
+def detect_cadav(chose_cascade, img, color):
+	chose = chose_cascade.detectMultiScale(img, 1.3, 5)
+	for (x,y,w,h) in chose:
+		print("voiture detected")
+		img = cv2.rectangle(img, (x, y), (x + w, y + h), color, 1)
+	return img
+
+def transform_image(img):
+	img = imutils.resize(img, width=500)
+	img = adjust_gamma(img, gamma=2.5)
+	gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+	gray = cv2.GaussianBlur(gray, (21, 21), 0)
+
+	return gray
+
+def improve_visibility(img):
+	# img = imutils.resize(img, width=640)
+	img = cv2.flip(img, -1)
+	# img = cv2.blur(img,(5,5))
+	img = adjust_gamma(img, gamma=2.5)
+	return img
+
 
 class Camera(BaseCamera):
 	video_source = 0
@@ -12,6 +61,7 @@ class Camera(BaseCamera):
 			Camera.set_video_source(int(os.environ['OPENCV_CAMERA_SOURCE']))
 		super(Camera, self).__init__()
 
+	
 	@staticmethod
 	def set_video_source(source):
 		Camera.video_source = source
@@ -25,46 +75,65 @@ class Camera(BaseCamera):
 
 		green_color = (0, 255, 0)
 		red_color = (255, 0, 0)
-		thickness = 3
+
+		thickness = 2
+
 		fullbody_cascade = cv2.CascadeClassifier('/home/pi/video-monitoring-server/haarcascades/haarcascade_fullbody.xml')
 		cars_cascade = cv2.CascadeClassifier('/home/pi/video-monitoring-server/haarcascades/haarcascade_cars.xml')
-		_, last_img = camera.read()
+
 		_, img = camera.read()
+		last_gray = transform_image(img)
+
+		last_shape_time = timestamp_second()
+		last_move_time = last_shape_time
+		start_recording_time = last_shape_time
+
+		last_longueur_contour = 100000
+		recording = False
+
+		frame_width = int(camera.get(3))
+		frame_height = int(camera.get(4))
+
 		while True:
-			# read current frame
 			_, img = camera.read()
-			img = cv2.flip(img, -1)
 
-			img = imutils.resize(img, width=500)
-			gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-			gray = cv2.GaussianBlur(gray, (21, 21), 0)
+			if(recording == True):
+				if(available_cooldown(start_recording_time, 10) == False):
+					out.write(img)
+				else:
+					print("Stop recording")
+					recording = False
+					out.release()
 
-			last_img = imutils.resize(last_img, width=500)
-			last_gray = cv2.cvtColor(last_img, cv2.COLOR_BGR2GRAY)
-			last_gray = cv2.GaussianBlur(last_gray, (21, 21), 0)
+			if (available_cooldown(last_move_time, 0) == True):
+				last_move_time = timestamp_second()
 
-			frameDelta = cv2.absdiff(last_gray, gray)
-			thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
+				gray = transform_image(img)
 
-			thresh = cv2.dilate(thresh, None, iterations=2)
-			cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-			cv2.CHAIN_APPROX_SIMPLE)
-			cnts = imutils.grab_contours(cnts)
+				frameDelta = cv2.absdiff(last_gray, gray)
+				thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
+				thresh = cv2.dilate(thresh, None, iterations=2)
 
-			for c in cnts:
-				if cv2.contourArea(c) < 2:
-					continue
-				(x, y, w, h) = cv2.boundingRect(c)
-				cv2.rectangle(thresh, (x, y), (x + w, y + h), (255, 255, 128), 2)
+				cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+				cnts = imutils.grab_contours(cnts)
 
-			# fullbody = fullbody_cascade.detectMultiScale(img, 1.3, 5)
-			# cars = cars_cascade.detectMultiScale(img, 1.3, 5)
-			# for (x,y,w,h) in fullbody:
-			# 	img = cv2.rectangle(img, (x, y), (x + w, y + h), color, thickness)
+				for c in cnts:
+					longueur_contour = cv2.contourArea(c)
+					print("Contour : " + str(longueur_contour))
+					if (longueur_contour > (2 * last_longueur_contour)):
+						start_recording_time = timestamp_second()
+						if (recording == False):
+							print("Motion detected start recording : " + str(longueur_contour))
+							recording = True
+							curDateTime = datetime.now()
+							# out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + str(longueur_contour) + '|' + str(curDateTime.strftime("%d-%m-%Y_%H:%M:%S")) + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
+							out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + str(curDateTime.strftime("%d-%m-%Y_%H:%M:%S")) + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
+						if (available_cooldown(last_shape_time, 3) == True):
+							last_shape_time = timestamp_second()
+							img = detect_cadav(cars_cascade, img, green_color)
+							img = detect_cadav(fullbody_cascade, img, red_color)
+					last_longueur_contour = longueur_contour
+				last_gray = gray
 
-			# for (x,y,w,h) in cars:
-			# 	img = cv2.rectangle(img, (x, y), (x + w, y + h), color, thickness)
-
-			# encode as a jpeg image and return it
-			yield cv2.imencode('.jpg', frameDelta)[1].tobytes()
-			last_img = img
+			img = improve_visibility(img)
+			yield cv2.imencode('.jpg', img)[1].tobytes()

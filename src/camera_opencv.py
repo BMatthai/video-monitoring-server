@@ -38,15 +38,15 @@ class Camera(BaseCamera):
 		fullbody_cascade = cv2.CascadeClassifier('/home/pi/video-monitoring-server/haarcascades/haarcascade_fullbody.xml')
 		cars_cascade = cv2.CascadeClassifier('/home/pi/video-monitoring-server/haarcascades/haarcascade_cars.xml')
 
-		ret, frame = camera.read()
-		last_gray = transform_image(frame)
 
 		last_shape_time = timestamp_second()
 		last_move_time = last_shape_time
 		start_recording_time = last_shape_time
 
-		last_longueur_contour = 100000
 		recording = False
+
+		ret, frame = camera.read()
+		last_gray = transform_image(frame)
 
 		while (camera.isOpened()):
 			ret, frame = camera.read()
@@ -65,7 +65,7 @@ class Camera(BaseCamera):
 				for contour in contours:
 					contour_length = cv2.contourArea(contour)
 					
-					if (contour_threshold_reached(contour_length, last_contour_length) == True):
+					if (contour_threshold_reached(contour_length) == True):
 						start_recording_time = timestamp_second()
 						if (is_recording() == False):
 							start_recording()

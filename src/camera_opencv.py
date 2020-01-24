@@ -48,7 +48,7 @@ class Camera(BaseCamera):
 		last_longueur_contour = 100000
 		recording = False
 
-		while True:
+		while (camera.isOpened()):
 			ret, frame = camera.read()
 
 			if(is_recording() == True):

@@ -2,12 +2,12 @@ from image_processing import *
 import cv2
 
 def read_video():
-	cap = cv2.VideoCapture('../sample/video_night.avi')
-	if (cap.isOpened()== False): 
+	camera = cv2.Videocamerature('../sample/video_night.avi')
+	if (camera.isOpened() == False): 
 		print("Error opening video stream or file")
 
-	while(cap.isOpened()):
-		ret, frame = cap.read()
+	while(camera.isOpened()):
+		ret, frame = camera.read()
 		if ret == True:
 			# cv2.imshow('Frame',frame)
 			# cv2.imshow('Frame clahe', transform_clahe(frame))
@@ -17,7 +17,7 @@ def read_video():
 		else: 
 			break
 
-	cap.release() 
+	camera.release() 
 	cv2.destroyAllWindows()
 
 read_video()

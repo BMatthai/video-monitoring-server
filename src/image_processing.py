@@ -59,5 +59,9 @@ def get_contours(last_gray, gray):
 
 	return contours
 
-def contour_threshold_reached(contour_length, last_contour_length):
-	return contour_length > (2 * last_contour_length)
+# def contour_threshold_reached(contour_length, last_contour_length):
+# 	return contour_length > (2 * last_contour_length)
+
+threshold = 300
+def contour_threshold_reached(contour_length):
+	return contour_length > threshold

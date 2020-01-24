@@ -2,22 +2,23 @@ from image_processing import *
 import cv2
 
 def read_video():
-	camera = cv2.Videocamerature('../sample/video_night.avi')
-	if (camera.isOpened() == False): 
-		print("Error opening video stream or file")
+	camera = cv2.VideoCapture('../sample/video_night.avi')
 
-	while(camera.isOpened()):
+	if not camera.isOpened():
+		raise RuntimeError('Could not start camera.')
+
+	ret, last_frame = camera.read()
+	last_gray = to_gray(last_frame)
+
+	while (camera.isOpened()):
 		ret, frame = camera.read()
-		if ret == True:
-			# cv2.imshow('Frame',frame)
-			# cv2.imshow('Frame clahe', transform_clahe(frame))
 
-			if cv2.waitKey(25) & 0xFF == ord('q'):
-				break
-		else: 
-			break
-
-	camera.release() 
-	cv2.destroyAllWindows()
+		modified_frame = improve_visibility(frame)
+		gray_frame = to_gray(modified_frame)
+		entoured_frame = detect_shape(modified_frame)
+		detect_motion(gray, last_gray)
+		
+		yield cv2.imencode('.jpg', entoured_frame)[1].tobytes()
+		last_gray = gray
 
 read_video()

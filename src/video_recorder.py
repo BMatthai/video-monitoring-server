@@ -10,6 +10,7 @@ class VideoRecorder:
 		# frame_height = int(camera.get(4))
 
 	def start_recording():
+		self.start_recording_time = timestamp_second()
 		curDateTime = datetime.now()
 		recording = True
 		self.out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + formatted_time() + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (self.frame_width, self.frame_height))

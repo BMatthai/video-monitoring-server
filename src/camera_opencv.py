@@ -8,11 +8,8 @@ import time
 import numpy as np
 import argparse
 
-def shape_detection(frame, cascade, color):
-	shape = cascade.detectMultiScale(frame, 1.3, 5)
-	for (x,y,w,h) in shape:
-		frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
-	return frame
+from image_processing import *
+from video_recorder import *
 
 class Camera(BaseCamera):
 	video_source = 0
@@ -41,8 +38,8 @@ class Camera(BaseCamera):
 		fullbody_cascade = cv2.CascadeClassifier('/home/pi/video-monitoring-server/haarcascades/haarcascade_fullbody.xml')
 		cars_cascade = cv2.CascadeClassifier('/home/pi/video-monitoring-server/haarcascades/haarcascade_cars.xml')
 
-		_, img = camera.read()
-		last_gray = transform_image(img)
+		ret, frame = camera.read()
+		last_gray = transform_image(frame)
 
 		last_shape_time = timestamp_second()
 		last_move_time = last_shape_time
@@ -51,50 +48,36 @@ class Camera(BaseCamera):
 		last_longueur_contour = 100000
 		recording = False
 
-		frame_width = int(camera.get(3))
-		frame_height = int(camera.get(4))
-
 		while True:
-			_, img = camera.read()
+			ret, frame = camera.read()
 
-			if(recording == True):
+			if(is_recording() == True):
 				if(available_cooldown(start_recording_time, 10) == False):
-					out.write(img)
+					write_frame(out, frame)
 				else:
-					print("Stop recording")
-					recording = False
-					out.release()
+					stop_recording(out)
 
 			if (available_cooldown(last_move_time, 0) == True):
 				last_move_time = timestamp_second()
+				gray = transform_image(frame)
+				contours = get_contours(last_gray, gray)
 
-				gray = transform_image(img)
-
-				frameDelta = cv2.absdiff(last_gray, gray)
-				thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
-				thresh = cv2.dilate(thresh, None, iterations=2)
-
-				cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-				cnts = imutils.grab_contours(cnts)
-
-				for c in cnts:
-					longueur_contour = cv2.contourArea(c)
+				for contour in contours:
+					contour_length = cv2.contourArea(contour)
 					
-					if (longueur_contour > (2 * last_longueur_contour)):
+					if (contour_threshold_reached(contour_length, last_contour_length) == True):
 						start_recording_time = timestamp_second()
-						if (recording == False):
-							recording = True
-							curDateTime = datetime.now()
-							out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + formatted_time() + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
-						
+						if (is_recording() == False):
+							start_recording()
+				
 						if (available_cooldown(last_shape_time, 3) == True):
 							last_shape_time = timestamp_second()
-							img = shape_detection(img, cars_cascade, green_color)
-							img = shape_detection(img, fullbody_cascade, red_color)
+							frame = shape_detection(frame, cars_cascade, green_color)
+							frame = shape_detection(frame, fullbody_cascade, red_color)
 					
-					last_longueur_contour = longueur_contour
+					last_contour_length = contour_length
 
 				last_gray = gray
 
-			img = improve_visibility(img)
-			yield cv2.imencode('.jpg', img)[1].tobytes()
+			frame = improve_visibility(frame)
+			yield cv2.imencode('.jpg', frame)[1].tobytes()

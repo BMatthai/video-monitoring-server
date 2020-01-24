@@ -42,3 +42,22 @@ def denoising(frame):
 def denoising_multi(frames):
 	dst = cv2.fastNlMeansDenoisingColoredMulti(noisy, 2, 5, None, 4, 7, 35)
 	return dst
+
+def shape_detection(frame, cascade, color):
+	shape = cascade.detectMultiScale(frame, 1.3, 5)
+	for (x,y,w,h) in shape:
+		frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
+	return frame
+
+def get_contours(last_gray, gray):
+	frame_delta = cv2.absdiff(last_gray, gray)
+	thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
+	thresh = cv2.dilate(thresh, None, iterations=2)
+
+	contours = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+	contours = imutils.grab_contours(cnts)
+
+	return contours
+
+def contour_threshold_reached(contour_length, last_contour_length):
+	return contour_length > (2 * last_contour_length)

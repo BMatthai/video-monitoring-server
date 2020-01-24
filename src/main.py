@@ -9,8 +9,8 @@ def read_video():
 	while(cap.isOpened()):
 		ret, frame = cap.read()
 		if ret == True:
-			cv2.imshow('Frame',frame)
-			cv2.imshow('Frame clahe', transform_clahe(frame))
+			# cv2.imshow('Frame',frame)
+			# cv2.imshow('Frame clahe', transform_clahe(frame))
 
 			if cv2.waitKey(25) & 0xFF == ord('q'):
 				break

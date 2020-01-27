@@ -1,7 +1,7 @@
 import os
 import cv2
 from base_camera import BaseCamera
-import imutils
+# import imutils
 
 import time
 
@@ -37,8 +37,8 @@ class Camera(BaseCamera):
 			ret, frame = camera.read()
 
 			modified_frame = improve_visibility(frame)
-			gray_frame = to_gray(modified_frame)
-			entoured_frame = detect_shape(modified_frame)
+			gray = to_gray(modified_frame)
+			entoured_frame = detect_shape(gray)
 			detect_motion(gray, last_gray)
 			
 			yield cv2.imencode('.jpg', entoured_frame)[1].tobytes()

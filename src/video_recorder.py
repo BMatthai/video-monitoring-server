@@ -1,29 +1,35 @@
 import cv2
+from time_manager import *
 
 class VideoRecorder:
 
-	def __init__(self):
-		self.recording = False
-		self.frame_width = 640
-		self.frame_height = 480
-		# frame_width = int(camera.get(3))
-		# frame_height = int(camera.get(4))
+	recording = False
+	start_recording_time = TimeManager.timestamp_second()
+	frame_width = 640
+	frame_height = 480
 
+	# frame_width = int(camera.get(3))
+	# frame_height = int(camera.get(4))
+
+	@staticmethod
 	def start_recording():
-		self.start_recording_time = timestamp_second()
+		start_recording_time = TimeManager.timestamp_second()
 		curDateTime = datetime.now()
 		recording = True
-		self.out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + formatted_time() + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (self.frame_width, self.frame_height))
+		out = cv2.VideoWriter('/home/pi/video-monitoring-server/recording/VIDEO_' + TimeManager.formatted_time() + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (VideoRecorder.frame_width, VideoRecorder.frame_height))
 
+	@staticmethod
 	def stop_recording(out):
 		recording = False
 		out.release()
 
+	@staticmethod
 	def write_frame(out, frame):
 		out.write(frame)
 
+	@staticmethod
 	def is_recording():
-		return recording
+		return VideoRecorder.recording
 
 
 

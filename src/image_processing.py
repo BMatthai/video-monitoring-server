@@ -21,7 +21,7 @@ def shape_recognition(cascade, frame, color):
 	return frame
 
 def detect_shapes(frame):
-	if (available_cooldown(TimeManager.last_detect_time, 0) == True):
+	if (available_cooldown(TimeManager.last_detect_time, 1) == True):
 		TimeManager.last_detect_time = timestamp_second()
 		frame = shape_recognition(cars_cascade, frame, GREEN_COLOR)
 		frame = shape_recognition(fullbody_cascade, frame, RED_COLOR)

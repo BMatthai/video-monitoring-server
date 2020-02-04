@@ -41,7 +41,7 @@ class Camera(BaseCamera):
 				motion_detected = detect_motion(gray, last_gray)
 
 				if (motion_detected == True):
-					shape_detected, improved_frame = detect_shapes(improved_frame)
+#					shape_detected, improved_frame = detect_shapes(improved_frame)
 					end_record = timestamp_second() + RECORD_SHIFT
 					if (VideoRecorder.is_recording == False):
 						start_recording()

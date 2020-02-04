@@ -21,10 +21,10 @@ def shape_recognition(cascade, frame, color):
 	return frame
 
 def detect_shapes(frame):
-	if (available_cooldown(TimeManager.last_detect_time, 1) == True):
+	if (available_cooldown(TimeManager.last_detect_time, 3) == True):
 		TimeManager.last_detect_time = timestamp_second()
-		frame = shape_recognition(cars_cascade, frame, GREEN_COLOR)
-		frame = shape_recognition(fullbody_cascade, frame, RED_COLOR)
+#		frame = shape_recognition(cars_cascade, frame, GREEN_COLOR)
+#		frame = shape_recognition(fullbody_cascade, frame, RED_COLOR)
 		frame = shape_recognition(upperbody_cascade, frame, BLUE_COLOR)
 
 	return True, frame
@@ -52,7 +52,7 @@ def to_gray(img):
 	return gray
 
 def improve_visibility(frame):
-	# frame = cv2.flip(frame, -1)
+	frame = cv2.flip(frame, -1)
 	# img = cv2.blur(img,(5,5))
 	frame = adjust_gamma(frame)
 	return frame
@@ -63,7 +63,7 @@ def transform_clahe(image):
 	cl = clahe.apply(l)
 	limg = cv2.merge((cl, a, b))
 	final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
-	return final 
+	return final
 
 def get_contours(gray, last_gray):
 	frame_delta = cv2.absdiff(last_gray, gray)

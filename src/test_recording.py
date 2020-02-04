@@ -3,8 +3,8 @@ from video_recorder import *
 import cv2
 
 def test_recording():
-	camera = cv2.VideoCapture('../sample/video_night.avi')
-	# camera = cv2.VideoCapture('../sample/car-detection.mp4')
+	# camera = cv2.VideoCapture('../sample/video_night.avi')
+	camera = cv2.VideoCapture('../sample/car-detection.mp4')
 
 	if (camera.isOpened() == False): 
 		print("Error opening video stream or file")
@@ -38,13 +38,12 @@ def test_recording():
 
 			improved_frame = improve_visibility(frame)
 
-			cv2.imshow('Frame', improved_frame)
-
 			gray = to_gray(frame)
 
 			motion_detected = detect_motion(gray, last_gray)
 
 			if (motion_detected == True):
+				(shape_detected, improved_frame) = detect_shapes(improved_frame)
 				end_record = timestamp_second() + RECORD_SHIFT
 				if (VideoRecorder.is_recording == False):
 					start_recording()
@@ -56,6 +55,8 @@ def test_recording():
 					stop_recording()
 
 			last_gray = gray
+
+			cv2.imshow('Frame', improved_frame)
 
 			if cv2.waitKey(25) & 0xFF == ord('q'):
 				break

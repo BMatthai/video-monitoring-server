@@ -2,13 +2,11 @@ import os
 import cv2
 from base_camera import BaseCamera
 
-# import time
+from image_processing import *
+from video_recorder import *
 
 import numpy as np
 import argparse
-
-from image_processing import *
-# from video_recorder import *
 
 class Camera(BaseCamera):
 	video_source = 0
@@ -26,8 +24,8 @@ class Camera(BaseCamera):
 	def frames():
 		camera = cv2.VideoCapture(Camera.video_source)
 
-		if not camera.isOpened():
-			raise RuntimeError('Could not start camera.')
+		if (camera.isOpened() == False): 
+			print("Error opening video stream or file")
 
 		ret, last_frame = camera.read()
 		last_gray = to_gray(last_frame)
@@ -35,10 +33,33 @@ class Camera(BaseCamera):
 		while (camera.isOpened()):
 			ret, frame = camera.read()
 
-			modified_frame = improve_visibility(frame)
-			gray = to_gray(modified_frame)
-			entoured_frame = detect_shape(gray)
-			detect_motion(gray, last_gray)
-			
-			yield cv2.imencode('.jpg', entoured_frame)[1].tobytes()
-			last_gray = gray
+			if ret == True:
+				improved_frame = improve_visibility(frame)
+
+				gray = to_gray(frame)
+
+				motion_detected = detect_motion(gray, last_gray)
+
+				if (motion_detected == True):
+					(shape_detected, improved_frame) = detect_shapes(improved_frame)
+					end_record = timestamp_second() + RECORD_SHIFT
+					if (VideoRecorder.is_recording == False):
+						start_recording()
+
+				if (VideoRecorder.is_recording == True):
+					if (outdated(end_record) == False):
+						write_frame(improved_frame)
+					else:
+						stop_recording()
+
+				last_gray = gray
+
+				yield cv2.imencode('.jpg', entoured_frame)[1].tobytes()
+
+				if cv2.waitKey(25) & 0xFF == ord('q'):
+					break
+			else:
+				break
+
+		camera.release()
+		cv2.destroyAllWindows()

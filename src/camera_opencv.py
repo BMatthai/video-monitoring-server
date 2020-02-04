@@ -36,12 +36,12 @@ class Camera(BaseCamera):
 			if ret == True:
 				improved_frame = improve_visibility(frame)
 
-				gray = to_gray(frame)
+				gray = to_gray(improved_frame)
 
 				motion_detected = detect_motion(gray, last_gray)
 
 				if (motion_detected == True):
-					(shape_detected, improved_frame) = detect_shapes(improved_frame)
+					shape_detected, improved_frame = detect_shapes(improved_frame)
 					end_record = timestamp_second() + RECORD_SHIFT
 					if (VideoRecorder.is_recording == False):
 						start_recording()
@@ -54,7 +54,7 @@ class Camera(BaseCamera):
 
 				last_gray = gray
 
-				yield cv2.imencode('.jpg', entoured_frame)[1].tobytes()
+				yield cv2.imencode('.jpg', improved_frame)[1].tobytes()
 
 				if cv2.waitKey(25) & 0xFF == ord('q'):
 					break

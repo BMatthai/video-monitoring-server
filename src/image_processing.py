@@ -8,24 +8,27 @@ from video_recorder import *
 # from matplotlib import pyplot as plt
 
 he_table = np.array([((i / 255.0) ** (1.0 / 2.5)) * 255 for i in np.arange(0, 256)]).astype("uint8")
-fullbody_cascade = cv2.CascadeClassifier('../haarcascades/haarcascade_fullbody.xml')
-upperbody_cascade = cv2.CascadeClassifier('../haarcascades/haarcascade_upperbody.xml')
-cars_cascade = cv2.CascadeClassifier('../haarcascades/haarcascade_cars.xml')
+fullbody_cascade = (cv2.CascadeClassifier(PROJECT_PATH + '/haarcascades/haarcascade_fullbody.xml'), "fullbody")
+upperbody_cascade = (cv2.CascadeClassifier(PROJECT_PATH + '/haarcascades/haarcascade_upperbody.xml'), "upperbody")
+car_cascade = (cv2.CascadeClassifier(PROJECT_PATH + '/haarcascades/haarcascade_car.xml'), "car")
+eye_cascade = (cv2.CascadeClassifier(PROJECT_PATH + '/haarcascades/haarcascade_eye.xml'), "eye")
 clahe = cv2.createCLAHE(clipLimit=20.0, tileGridSize=(32,32))
 
-def shape_recognition(cascade, frame, color):
-	shape = cascade.detectMultiScale(frame, 1.05, 5)
-	print(shape)
+def shape_recognition(cascade, shape_name, frame, color):
+	shape = cascade.detectMultiScale(frame, 1.2, 5)
 	for (x,y,w,h) in shape:
+		print(STR_SHAPE_DETECTED + shape_name)
 		frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, THICKNESS)
+		take_picture(frame)
 	return frame
 
 def detect_shapes(frame):
-	if (available_cooldown(TimeManager.last_detect_time, 3) == True):
+	if (available_cooldown(TimeManager.last_detect_time, 1) == True):
 		TimeManager.last_detect_time = timestamp_second()
-#		frame = shape_recognition(cars_cascade, frame, GREEN_COLOR)
-#		frame = shape_recognition(fullbody_cascade, frame, RED_COLOR)
-		frame = shape_recognition(upperbody_cascade, frame, BLUE_COLOR)
+		frame = shape_recognition(car_cascade[0], car_cascade[1], frame, GREEN_COLOR)
+		frame = shape_recognition(fullbody_cascade[0],fullbody_cascade[1], frame, RED_COLOR)
+		frame = shape_recognition(upperbody_cascade[0], upperbody_cascade[1], frame, BLUE_COLOR)
+		frame = shape_recognition(eye_cascade[0], eye_cascade[1], frame, YELLOW_COLOR)
 
 	return True, frame
 
@@ -37,6 +40,7 @@ def detect_motion(gray, last_gray):
 		for contour in contours:
 			contour_length = cv2.contourArea(contour)
 			if (contour_threshold_reached(contour_length) == True):
+				print(STR_MOTION_DETECTED)
 				return True
 	return False
 

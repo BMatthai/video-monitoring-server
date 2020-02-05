@@ -25,7 +25,7 @@ class Camera(BaseCamera):
 		camera = cv2.VideoCapture(Camera.video_source)
 
 		if (camera.isOpened() == False): 
-			print("Error opening video stream or file")
+			print(STR_ERROR_OPENING_STREAM)
 
 		ret, last_frame = camera.read()
 		last_gray = to_gray(last_frame)
@@ -35,13 +35,13 @@ class Camera(BaseCamera):
 
 			if ret == True:
 				improved_frame = improve_visibility(frame)
-
+#				improved_frame = frame
 				gray = to_gray(improved_frame)
 
 				motion_detected = detect_motion(gray, last_gray)
 
 				if (motion_detected == True):
-#					shape_detected, improved_frame = detect_shapes(improved_frame)
+					# shape_detected, improved_frame = detect_shapes(improved_frame)
 					end_record = timestamp_second() + RECORD_SHIFT
 					if (VideoRecorder.is_recording == False):
 						start_recording()

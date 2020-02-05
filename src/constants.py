@@ -12,6 +12,8 @@ FRAME_HEIGHT = 480
 
 PROJECT_PATH = "/home/pi/video-monitoring-server"
 
+STR_MOTION_DETECTED = "Un mouvement a été detecté"
+
 STR_ERROR_OPENING_STREAM = "Problème dans l'ouverture du flux vidéo."
 STR_SHAPE_DETECTED = "Une forme a été détectée : "
 STR_START_RECORDING = "Début de l'enregistrement vidéo"

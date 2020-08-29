@@ -89,3 +89,8 @@ def denoising(frame):
 def denoising_multi(frames):
 	dst = cv2.fastNlMeansDenoisingColoredMulti(frames, 2, 5, None, 4, 7, 35)
 	return dst
+
+def add_timestamp_frame(frame):
+	cv2.putText(frame,formatted_time(),(0,15),cv2.FONT_HERSHEY_DUPLEX,0.5,(0,0,0),1)
+	return frame
+
